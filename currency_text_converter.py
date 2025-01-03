@@ -1,10 +1,52 @@
 import json
 import argparse
+import re
+#import requests
 
-def find_currency(text, symbol):
-    pass
+def find_pattern(text, pattern):
+    # Returns all instances of `pattern` in `text`
+    regex = rf"{pattern}"
+    finder = re.compile(regex)
+    matches = finder.findall(text)
+    print(matches)
+    return matches
 
-def convert(amount, currency_from, currency_to):
+def find_currency_symbol(text, symbol, condition):
+    # Look for symbol in text
+
+    """
+    Matches currency symbol with numbers
+
+    Examples:
+
+    - $1,000.00
+    - 234.000.000,00 USD
+    - USD 10000.00
+    """
+
+    decimal_finder = r"(?:[0-9(,|.|\s)]+(?:[,.][0-9]{2,3}))"
+    integer_finder = r"(?![.,\s]{1}(\d+))"
+
+    # Include space between match and symbol if allowed
+    space_finder = None
+    if condition["spaces_allowed"] == 0:
+        # Spaces forbidden
+        space_finder = r"(?!\s)"
+    elif condition["spaces_allowed"] == 1:
+        # Spaces required
+        space_finder = r"(?:\s)"
+    elif condition["spaces_allowed"] == 2:
+        # Spaces optional
+        space_finder = r'\s?'
+
+    # Find currency signs such as '$' or '€'
+    currency_sign_regex = rf"{symbol}{space_finder}{decimal_finder}"
+    print(currency_sign_regex)
+    currency_sign_matches = find_pattern(text, currency_sign_regex)
+
+    return currency_sign_matches
+
+def convert_currency(amount, currency_from, currency_to):
     if currency_from == currency_to:
         return original_amount
 
@@ -14,7 +56,6 @@ def main(text, currency_code):
     with open('currencies.json') as file:
         data = json.load(file)
 
-    # Find currency symbols in text
     currency_data = data[currency_code]
 
     # Generate all possible currency symbols
@@ -24,7 +65,7 @@ def main(text, currency_code):
     plural_name = plural_name.strip().upper()
 
     """
-    `currency_symbols` states when a currency symbol can be used in English.
+    `symbol_condition` states when a currency symbol can be used in English.
 
     It contains 3 keys:
 
@@ -43,11 +84,11 @@ def main(text, currency_code):
     However, this common grammatical mistake will be automatically converted.
     """
 
-    currency_symbols = {
+    symbol_condition = {
         currency_code: {
             'placed_before': True,
             'placed_after': True,
-            'spaces_allowed': 1
+            'spaces_allowed': 2
         },
         currency_data['symbol']: {
             'placed_before': True,
@@ -67,14 +108,25 @@ def main(text, currency_code):
         name: {
             'placed_before': False,
             'placed_after': True,
-            'spaces_allowed': 0
+            'spaces_allowed': 1
         },
         plural_name: {
             'placed_before': False,
             'placed_after': True,
-            'spaces_allowed': 0
+            'spaces_allowed': 1
         }
-    }    
+    }
+
+    results = {}
+
+    for key in symbol_condition.keys():
+        if key == '$':
+            # If the symbol is a "$", escape it so that regex works
+            results[key] = find_currency_symbol(text, r"\$", symbol_condition[key]) 
+        else:
+            results[key] = find_currency_symbol(text, key, symbol_condition[key])
+    from pprint import pprint
+    pprint(results)
 
 
 if __name__ == '__main__':
