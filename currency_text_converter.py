@@ -30,10 +30,11 @@ def find_currency_symbol(text, symbol, condition):
     currency_indices = [(match.start(), match.end()) for match in matches]
     print(currency_indices)
 
-    quit()
 
     # Find numbers next to currency_indices
+    numbers = []
     for start, end in currency_indices:
+        num = []
         if condition['placed_before'] == True:
             i = start
             while True:
@@ -52,14 +53,22 @@ def find_currency_symbol(text, symbol, condition):
                         char == " ":
                             break
 
-                    # If the character is a valid thousands separator, move onto the next character
-                    if char == "," or char == "." or char == " ":
+                    THOUSANDS_SEPARATORS = [",", ".", " ", "_"]
+                    if char in THOUSANDS_SEPARATORS:
+                        num.append(char)
                         i -= 1
                         continue
 
                     break
                 else:
+                    num.append(char)
                     i -= 1
+
+            # Reverse num and append to numbers
+            num = num[::-1]
+            num = ''.join(num)
+            num = num.strip()
+            numbers.append(num)
 
         if condition['placed_after'] == True:
             pass
@@ -83,6 +92,8 @@ def find_currency_symbol(text, symbol, condition):
             elif last_period > last_comma: decimal_separator = "."
         else:
             number = int(word)
+
+    print(numbers)
 
 def convert_currency(amount, currency_from, currency_to):
     if currency_from == currency_to:
