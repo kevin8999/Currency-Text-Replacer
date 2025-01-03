@@ -24,27 +24,65 @@ def find_currency_symbol(text, symbol, condition):
     - USD 10000.00
     """
 
-    decimal_finder = r"(?:[0-9(,|.|\s)]+(?:[,.][0-9]{2,3}))"
-    integer_finder = r"(?![.,\s]{1}(\d+))"
+    # Stores indices of where the currency index occurs
+    currency_indices = []
+    matches = re.finditer(symbol, text)
+    currency_indices = [(match.start(), match.end()) for match in matches]
+    print(currency_indices)
 
-    # Include space between match and symbol if allowed
-    space_finder = None
-    if condition["spaces_allowed"] == 0:
-        # Spaces forbidden
-        space_finder = r"(?!\s)"
-    elif condition["spaces_allowed"] == 1:
-        # Spaces required
-        space_finder = r"(?:\s)"
-    elif condition["spaces_allowed"] == 2:
-        # Spaces optional
-        space_finder = r'\s?'
+    quit()
 
-    # Find currency signs such as '$' or '€'
-    currency_sign_regex = rf"{symbol}{space_finder}{decimal_finder}"
-    print(currency_sign_regex)
-    currency_sign_matches = find_pattern(text, currency_sign_regex)
+    # Find numbers next to currency_indices
+    for start, end in currency_indices:
+        if condition['placed_before'] == True:
+            i = start
+            while True:
+                char = text[i-1]
+                try:
+                    int(char)
+                except:
+                    # If the first character before the currency symbol is a space and spaces are allowed or permitted, move onto the next character
+                    if (condition["spaces_allowed"] == "required" or condition["spaces_allowed"] == "optional") and \
+                        i == start-1 and \
+                        char == " ":
+                            i -= 1
+                            continue
+                    elif condition["spaces_allowed"] == "forbidden" and \
+                        i == start-1 and \
+                        char == " ":
+                            break
 
-    return currency_sign_matches
+                    # If the character is a valid thousands separator, move onto the next character
+                    if char == "," or char == "." or char == " ":
+                        i -= 1
+                        continue
+
+                    break
+                else:
+                    i -= 1
+
+        if condition['placed_after'] == True:
+            pass
+
+        try:
+            float(word)
+        except:
+            continue
+
+        decimal_separator = None
+        if "," in word or "." in word:
+            # Determine if "," or "." occurs last to find decimal separator
+
+            # Get all indexes of commas and periods and find the index where each occurs
+            commas = [index for index, char in enumerate(text) if char == ","]
+            periods = [index for index, char in enumerate(text) if char == "."]
+            last_comma = max(commas)
+            last_period = max(periods)
+            
+            if last_comma > last_period: decimal_separator = ","
+            elif last_period > last_comma: decimal_separator = "."
+        else:
+            number = int(word)
 
 def convert_currency(amount, currency_from, currency_to):
     if currency_from == currency_to:
@@ -73,12 +111,6 @@ def main(text, currency_code):
     - placed_after: currency symbol may be placed after a quantity.
     - spaces_allowed: currency symbol may have a space between it and the amount.
 
-    The `spaces_allowed` key, contains values that state when spaces are used for currency symbols in English.
-
-    - 0: spaces are forbidden. They must NOT be used.
-    - 1: spaces are required. They MUST be used.
-    - 2: spaces are optional. They may or may not be used.
-
     NOTE: for `currency_data['symbol']` and `currency_data['symbolNative']`,
     some currencies only allow you to place a symbol before or after the amount.
     However, this common grammatical mistake will be automatically converted.
@@ -88,32 +120,32 @@ def main(text, currency_code):
         currency_code: {
             'placed_before': True,
             'placed_after': True,
-            'spaces_allowed': 2
+            'spaces_allowed': "optional"
         },
         currency_data['symbol']: {
             'placed_before': True,
             'placed_after': True,
-            'spaces_allowed': 1
+            'spaces_allowed': "required"
         },
         currency_data['symbolNative']: {
             'placed_before': True,
             'placed_after': True,
-            'spaces_allowed': 0            
+            'spaces_allowed': "forbidden"          
         },
         currency_data['name'].upper(): {
             'placed_before': False,
             'placed_after': True,
-            'spaces_allowed': 2
+            'spaces_allowed': "optional"
         },
         name: {
             'placed_before': False,
             'placed_after': True,
-            'spaces_allowed': 1
+            'spaces_allowed': "required"
         },
         plural_name: {
             'placed_before': False,
             'placed_after': True,
-            'spaces_allowed': 1
+            'spaces_allowed': "required"
         }
     }
 
