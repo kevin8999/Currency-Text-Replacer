@@ -90,9 +90,6 @@ class Currency:
             try:
                 int(char)
             except:
-
-                #import time
-                #time.sleep(1)
                 # If the first character before the currency symbol is a space and spaces are allowed or permitted, move onto the next character
                 if (condition["spaces_allowed"] == "required" or condition["spaces_allowed"] == "optional") and \
                     abs(symbol_index - i) == 0 and \
@@ -106,16 +103,23 @@ class Currency:
                     abs(symbol_index - i) == 0 and \
                     char == " ":
                         break
-
+                
                 if char in self.THOUSANDS_SEPARATORS:
-                    num.append(char)
-                    if move_backwards:
-                        i -= 1
+                    # Test to see if consecutive character after thousands separator is a number
+                    try:
+                        next_char = self.text[i-2] if move_backwards else self.text[i+1]
+                        int(next_char)
+                    except:
+                        break
                     else:
-                        i += 1
-                    continue
-
-                break
+                        num.append(char)
+                        if move_backwards:
+                            i -= 1
+                        else:
+                            i += 1
+                        continue
+                else:
+                    break
             else:
                 num.append(char)
                 if move_backwards:
@@ -126,7 +130,7 @@ class Currency:
         if move_backwards:
             # Reverse num
             num = num[::-1]
-            
+
         num = ''.join(num)
         num = num.strip()
         return num
