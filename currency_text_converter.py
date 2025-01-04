@@ -49,7 +49,7 @@ class Currency:
             currency_data['symbol']: {
                 'placed_before': True,
                 'placed_after': True,
-                'spaces_allowed': "required"
+                'spaces_allowed': "optional" if len(currency_data['symbol']) > 1 else "required"
             },
             currency_data['symbolNative']: {
                 'placed_before': True,
@@ -73,8 +73,11 @@ class Currency:
             }
         }
 
+        for i, key in enumerate(self.symbol_condition.keys()):
+            print(f"{i+1}: {key}", end='\n')
+
     def find_number(self, move_backwards: bool, symbol_index, condition):
-        # Finds number in self.text from currency_symbol
+        # Finds number next to symbol_index
         i = symbol_index
 
         num = []
@@ -82,15 +85,17 @@ class Currency:
             if move_backwards:
                 char = self.text[i-1]
             else:
-                char = self.text[i+1]
+                char = self.text[i]
 
             try:
                 int(char)
             except:
-                print(f"{symbol_index} - {i}")
+
+                #import time
+                #time.sleep(1)
                 # If the first character before the currency symbol is a space and spaces are allowed or permitted, move onto the next character
                 if (condition["spaces_allowed"] == "required" or condition["spaces_allowed"] == "optional") and \
-                    abs(symbol_index - i) == 1 and \
+                    abs(symbol_index - i) == 0 and \
                     char == " ":
                         if move_backwards:
                             i -= 1
@@ -98,22 +103,30 @@ class Currency:
                             i += 1
                         continue
                 elif condition["spaces_allowed"] == "forbidden" and \
-                    abs(symbol_index - i) == 1 and \
+                    abs(symbol_index - i) == 0 and \
                     char == " ":
                         break
 
                 if char in self.THOUSANDS_SEPARATORS:
                     num.append(char)
-                    i -= 1
+                    if move_backwards:
+                        i -= 1
+                    else:
+                        i += 1
                     continue
 
                 break
             else:
                 num.append(char)
-                i -= 1
+                if move_backwards:
+                    i -= 1
+                else:
+                    i += 1
 
-        # Reverse num and return
-        num = num[::-1]
+        if move_backwards:
+            # Reverse num
+            num = num[::-1]
+            
         num = ''.join(num)
         num = num.strip()
         return num
@@ -135,19 +148,20 @@ class Currency:
         currency_indices = []
         matches = re.finditer(symbol, self.text)
         currency_indices = [(match.start(), match.end()) for match in matches]
-        print(currency_indices)
 
         # Find numbers next to currency_indices
+        numbers = []
         for start, end in currency_indices:
             if condition['placed_before'] == True:
                 num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
-                self.numbers.append(num)
+                numbers.append(num)
 
             if condition['placed_after'] == True:
-                i = end
                 num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
+                numbers.append(num)
 
-        print(self.numbers)
+        numbers = [num for num in numbers if num != ''] # Remove whitespaces in list
+        return numbers
 
     def find(self):
         results = {}
@@ -159,7 +173,6 @@ class Currency:
                 results[key] = self.find_currency_symbol(key, self.symbol_condition[key])
         from pprint import pprint
         pprint(results)
-
 
 
 def convert_currency(amount, currency_from, currency_to):
@@ -175,7 +188,6 @@ def main(text, currency_code):
     currency_data = data[currency_code]
     converter = Currency(currency_code, currency_data, text)
     converter.find()
-
 
 
 if __name__ == '__main__':
