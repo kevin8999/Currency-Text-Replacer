@@ -63,4 +63,4 @@ class NumberParser:
                 raise ValueError(f"{decimal_separator} is not a valid decimal separator.")
 
         elif num_separators_found > 2:
-            raise ValueError("Separators found is greater than 2. Not a valid number.")
+            raise ValueError(f"Found more than 2 separators. {self.number_str} must have 2 or fewer unique separators. Separators found: {separators_found}")
