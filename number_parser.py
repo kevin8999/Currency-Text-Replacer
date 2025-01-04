@@ -1,11 +1,15 @@
 """
 Finds numbers in string format and converts them to integer.
 
-Valid numbers include:
+Numbers that can be parsed include:
 
 - 1,234,567.89
 - 1.234.567,89
 - 1 234 567,89
+
+Access the final number using self.number.
+
+Access decimal separator and thousand separator positions using self.decimal_separator_pos and self.thousand_separator_pos
 """
 
 class NumberParser:
@@ -42,6 +46,11 @@ class NumberParser:
         elif num_separators_found == 2:
             decimal_separator = separators_found[-1]
             thousands_separator = separators_found[0]
+
+            # Find position of decimal and thousands separator
+            self.decimal_separator_pos = self.number_str.find(decimal_separator)
+            self.thousands_separator_pos = [(thousands_separator, i) for i, digit in enumerate(self.number_str) if digit == thousands_separator]
+
             if decimal_separator in self.DECIMAL_SEPARATORS:
                 whole_number, decimal = self.number_str.split(decimal_separator)
 
@@ -56,7 +65,9 @@ class NumberParser:
         elif num_separators_found > 2:
             raise ValueError("Separators found is greater than 2. Not a valid number.")
 
-num = "1_234789.99956"
+num = "1_234_789.99956"
 num_parser = NumberParser(num)
-num_parser.find_separators()
-print(num_parser.number)
+num_parser.find()
+print(num_parser)
+print(num_parser.thousands_separator_pos)
+print(num_parser.decimal_separator_pos)
