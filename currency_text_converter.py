@@ -11,6 +11,51 @@ def find_pattern(text, pattern):
     print(matches)
     return matches
 
+def find_number(move_backwards: bool, symbol_index, text, condition):
+    # Finds number in text from currency_symbol
+    i = symbol_index
+
+    num = []
+    while True:
+        if move_backwards:
+            char = text[i-1]
+        else:
+            char = text[i+1]
+
+        try:
+            int(char)
+        except:
+            # If the first character before the currency symbol is a space and spaces are allowed or permitted, move onto the next character
+            if (condition["spaces_allowed"] == "required" or condition["spaces_allowed"] == "optional") and \
+                abs(symbol_index - i) == 1 and \
+                char == " ":
+                    if move_backwards:
+                        i -= 1
+                    else:
+                        i += 1
+                    continue
+            elif condition["spaces_allowed"] == "forbidden" and \
+                abs(symbol_index - i) == 1 and \
+                char == " ":
+                    break
+
+            THOUSANDS_SEPARATORS = [",", ".", " ", "_"]
+            if char in THOUSANDS_SEPARATORS:
+                num.append(char)
+                i -= 1
+                continue
+
+            break
+        else:
+            num.append(char)
+            i -= 1
+
+    # Reverse num and return
+    num = num[::-1]
+    num = ''.join(num)
+    num = num.strip()
+    return num
+
 def find_currency_symbol(text, symbol, condition):
     # Look for symbol in text
 
@@ -30,13 +75,13 @@ def find_currency_symbol(text, symbol, condition):
     currency_indices = [(match.start(), match.end()) for match in matches]
     print(currency_indices)
 
-
     # Find numbers next to currency_indices
     numbers = []
     for start, end in currency_indices:
-        num = []
         if condition['placed_before'] == True:
-            i = start
+            num = find_number(move_backwards=True, symbol_index=start, text=text, condition=condition)
+            numbers.append(num)
+            """i = start
             while True:
                 char = text[i-1]
                 try:
@@ -62,23 +107,44 @@ def find_currency_symbol(text, symbol, condition):
                     break
                 else:
                     num.append(char)
-                    i -= 1
+                    i -= 1"""
 
-            # Reverse num and append to numbers
-            num = num[::-1]
-            num = ''.join(num)
-            num = num.strip()
-            numbers.append(num)
+            print(numbers)
 
         if condition['placed_after'] == True:
-            pass
+            i = end
+            num = find_number(move_backwards=False, symbol_index=end, text=text, condition=condition)
 
-        try:
-            float(word)
-        except:
-            continue
+            """while True:
 
-        decimal_separator = None
+                
+                char = text[i+1]
+                try:
+                    int(char)
+                except:
+                    # If the first character before the currency symbol is a space and spaces are allowed or permitted, move onto the next character
+                    if (condition["spaces_allowed"] == "required" or condition["spaces_allowed"] == "optional") and \
+                        i == end+1 and \
+                        char == " ":
+                            i += 1
+                            continue
+                    elif condition["spaces_allowed"] == "forbidden" and \
+                        i == end+1 and \
+                        char == " ":
+                            break
+
+                    THOUSANDS_SEPARATORS = [",", ".", " ", "_"]
+                    if char in THOUSANDS_SEPARATORS:
+                        num.append(char)
+                        i += 1
+                        continue
+
+                    break
+                else:
+                    num.append(char)
+                    i -= 1"""
+
+        """decimal_separator = None
         if "," in word or "." in word:
             # Determine if "," or "." occurs last to find decimal separator
 
@@ -88,10 +154,12 @@ def find_currency_symbol(text, symbol, condition):
             last_comma = max(commas)
             last_period = max(periods)
             
-            if last_comma > last_period: decimal_separator = ","
-            elif last_period > last_comma: decimal_separator = "."
+            if last_comma > last_period:
+                decimal_separator = ","
+            elif last_period > last_comma:
+                decimal_separator = "."
         else:
-            number = int(word)
+            number = int(word)"""
 
     print(numbers)
 
