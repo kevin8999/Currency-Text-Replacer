@@ -64,10 +64,3 @@ class NumberParser:
 
         elif num_separators_found > 2:
             raise ValueError("Separators found is greater than 2. Not a valid number.")
-
-num = "1_234_789.99956"
-num_parser = NumberParser(num)
-num_parser.find()
-print(num_parser)
-print(num_parser.thousands_separator_pos)
-print(num_parser.decimal_separator_pos)
