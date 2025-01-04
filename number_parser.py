@@ -39,10 +39,10 @@ class NumberParser:
 
         num_separators_found = len(set(separators_found))
 
-        # If EXACTLY two unique separators are found, this means there is a thousands separator and a decimal separator
         if num_separators_found == 1:
             thousands_separator = separators_found[0]
             self.number = self.number_str.replace(thousands_separator, "")
+            self.number = float(self.number)
         elif num_separators_found == 2:
             decimal_separator = separators_found[-1]
             thousands_separator = separators_found[0]
