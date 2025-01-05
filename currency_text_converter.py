@@ -9,7 +9,9 @@ class CurrencyConverter:
     def __init__(self, exchange_rate_file='exchange_rates.json'):
         self.exchange_rate_file = exchange_rate_file
         with open(self.exchange_rate_file) as file:
-            self.exchange_rates = json.load(file)
+            data = json.load(file)
+
+        self.exchange_rates = data["rates"]
 
     def convert(self, amount_from: float, currency_from: str, currency_to: str) -> float:
         currencies = [currency_from.upper(), currency_to.upper()]
@@ -18,6 +20,13 @@ class CurrencyConverter:
                 self.exchange_rates[currency]
             except:
                 raise KeyError(f"{currency} not found in {self.exchange_rate_file}.")
+
+        # Convert amount_from to USD
+        USD_amount = amount_from / self.exchange_rates[currency_from]
+
+        # Convert USD_amount to target currency
+        amount_to = USD_amount * self.exchange_rates[currency_to]
+        return amount_to
         
 
 def main(text, currency_code):
