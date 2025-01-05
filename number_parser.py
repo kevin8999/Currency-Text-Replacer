@@ -42,6 +42,10 @@ class NumberParser:
         if num_separators_found == 0:
             self.number = float(self.number_str)
         elif num_separators_found == 1:
+            '''
+            IMPORTANT: if the number of separators found is 1, it is not known if the separator is for thousands or decimals
+            '''
+
             # Check if 3rd to last digit is a thousands separator
             if (self.number_str[-4] in self.SEPARATORS or len(separators_found) > 1) and use_thousands_separator_for_single_unique_separator:
                 thousands_separator = self.number_str[-4]
