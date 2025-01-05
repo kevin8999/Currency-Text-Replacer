@@ -1,4 +1,5 @@
 import re
+from number_parser import NumberParser
 
 class PriceParser:
     def __init__(self, currency_code, currency_data, text):
