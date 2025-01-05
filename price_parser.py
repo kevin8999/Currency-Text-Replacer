@@ -2,6 +2,10 @@ import re
 from number_parser import NumberParser
 
 class PriceParser:
+    '''
+    Finds all prices with `currency_code` in `text`.
+    '''
+
     def __init__(self, currency_code, currency_data, text):
         self.currency_code = currency_code
         self.currency_data = currency_data
@@ -188,7 +192,3 @@ class PriceParser:
                     'decimal_separator': num_parser.decimal_separator_pos,
                     'thousands_separator': num_parser.thousands_separator_pos
                 }
-
-        from pprint import pprint
-        pprint(self.results)
-        pprint(self.separator_positions)
