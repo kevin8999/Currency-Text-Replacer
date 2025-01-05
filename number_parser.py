@@ -21,7 +21,7 @@ class NumberParser:
         self.VALID_DIGITS = [str(i) for i in range(10)]
 
         self.decimal_separator_pos = None
-        self.thousands_separator_pos = []
+        self.thousands_separator_pos = None
         self.SEPARATORS = [",", ".", "_", " ", "'"]
         self.DECIMAL_SEPARATORS = [",", "."]
 
