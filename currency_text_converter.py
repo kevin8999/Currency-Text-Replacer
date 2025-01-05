@@ -1,6 +1,7 @@
 import json
 import argparse
 import re
+from number_parser import NumberParser
 #import requests
 
 def find_pattern(text, pattern):
@@ -11,7 +12,7 @@ def find_pattern(text, pattern):
     print(matches)
     return matches
 
-class Currency:
+class PriceParser:
     def __init__(self, currency_code, currency_data, text):
         self.currency_code = currency_code
         self.currency_data = currency_data
@@ -24,7 +25,22 @@ class Currency:
 
         self.numbers = []
         self.text = text
-        self.THOUSANDS_SEPARATORS = [",", ".", " ", "_"]
+        self.THOUSANDS_SEPARATORS = [",", ".", "_", " ", "'"]
+        self.DECIMAL_SEPARATORS = [",", "."]
+
+        """
+        self.num_strings saves the position of each decimal separator and thousands separator for a number.
+
+        For example, the number "1,234,567.89" would be stored as:
+
+        {
+            "123456789": {
+                "decimal_separators": (".", 9),
+                "thousands_separators": [(",", 1), (",", 5)]
+            }
+        }
+        """
+        self.separator_positions = {}
 
         """
         `self.symbol_condition` states when a currency symbol can be used in English.
@@ -73,15 +89,12 @@ class Currency:
             }
         }
 
-        for i, key in enumerate(self.symbol_condition.keys()):
-            print(f"{i+1}: {key}", end='\n')
-
-    def find_number(self, move_backwards: bool, symbol_index, condition):
+    def find_number(self, move_backwards: bool, symbol_index: int, condition: dict):
         # Finds number next to symbol_index
         i = symbol_index
 
         num = []
-        while True:
+        while i < len(self.text):
             if move_backwards:
                 char = self.text[i-1]
             else:
@@ -168,16 +181,30 @@ class Currency:
         return numbers
 
     def find(self):
-        results = {}
+        self.results = {}
         for key in self.symbol_condition.keys():
             if key == '$':
                 # If the symbol is a "$", escape it so that regex works
-                results[key] = self.find_currency_symbol(r"\$", self.symbol_condition[key]) 
+                self.results[key] = self.find_currency_symbol(r"\$", self.symbol_condition[key]) 
             else:
-                results[key] = self.find_currency_symbol(key, self.symbol_condition[key])
-        from pprint import pprint
-        pprint(results)
+                self.results[key] = self.find_currency_symbol(key, self.symbol_condition[key])
+        
+        # Convert each string in self.results to a number
+        for key in self.results.keys():
+            for i, result in enumerate(self.results[key]):
+                num_parser = NumberParser()
+                num_parser.find(result)
+                self.results[key][i] = num_parser.number
 
+                # Store position of decimal and thousands separators
+                self.separator_positions[num_parser.number_str] = {
+                    'decimal_separator': num_parser.decimal_separator_pos,
+                    'thousands_separator': num_parser.thousands_separator_pos
+                }
+
+        from pprint import pprint
+        pprint(self.results)
+        pprint(self.separator_positions)
 
 def convert_currency(amount, currency_from, currency_to):
     if currency_from == currency_to:
@@ -190,7 +217,7 @@ def main(text, currency_code):
         data = json.load(file)
 
     currency_data = data[currency_code]
-    converter = Currency(currency_code, currency_data, text)
+    converter = PriceParser(currency_code, currency_data, text)
     converter.find()
 
 
@@ -219,7 +246,7 @@ if __name__ == '__main__':
     if args.text != None and args.file != None:
         raise ValueError("Cannot enter text and file at the same time. Please split your command into two separate commands.")
     elif args.text == None and args.file == None:
-        raise ValueError("Please enter text or a file you would like to convert to.")
+        raise ValueError("Please enter text (-t \"sample text here\") or a file (-f file.txt) you would like to convert to.")
 
     # Assign text based on argument not inputted by user
     text = None
