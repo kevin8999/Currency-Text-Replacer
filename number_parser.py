@@ -98,3 +98,14 @@ class NumberParser:
                 if len(group) == 2:
                     self.uses_indian_thousands_sys = True
                     break
+
+    @property
+    def results(self) -> dict:
+        return {
+            'number_str': self.number_str,
+            'number': self.number,
+            'separator_positions': {
+                'decimal': self.decimal_separator_pos,
+                'thousands': self.thousands_separator_pos
+            }
+        }
