@@ -85,6 +85,7 @@ def main(text, currency_from, currency_to, output_file):
 
     # Convert prices to string
 
+
     # Write to file
     print(f"Writing to changes to {output_file}...")
 
@@ -134,5 +135,10 @@ if __name__ == '__main__':
         raise ValueError(f"{args.currency_from} was not found in valid_currencies.txt.")
     if args.currency_to not in valid_currencies:
         raise ValueError(f"{args.currency_to} was not found in valid_currencies.txt.")
+
+    if args.currency_from == args.currency_to:
+        print(f"Input currency is the same as output currency. Input: {args.currency_from}. Output: {args.currency_to}.")
+        print("Conversion was not performed.")
+        quit()
 
     main(text, args.currency_from, args.currency_to, args.output_file)
