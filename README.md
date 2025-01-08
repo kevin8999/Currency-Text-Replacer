@@ -1,4 +1,4 @@
-# Currency Exchange Calculator
+# Currency Text Replacer
 This calculator takes in any piece of text and replaces the text inside it with the valid currency.
 
 For example, suppose you want to convert EUR to USD, and you have this piece of text:
