@@ -1,14 +1,15 @@
 import re
 from number_parser import NumberParser
+import copy
 
 class PriceParser:
     '''
-    Finds all prices with `currency_code` in `text`.
+    Finds all prices with `currency_from` in `text`.
     '''
 
-    def __init__(self, currency_code, currency_data, text):
-        self.currency_code = currency_code
-        self.currency_data = currency_data
+    def __init__(self, currency_from, currency_data, text):
+        self.currency_from = currency_from
+        self.text = text
 
         # Get name and plural name of currency
         name = currency_data["name"].replace(currency_data["demonym"], "") # Remove demonym from currency
@@ -17,9 +18,13 @@ class PriceParser:
         plural_name = plural_name.strip().upper()
 
         self.numbers = []
-        self.text = text
         self.THOUSANDS_SEPARATORS = [",", ".", "_", " ", "'"]
         self.DECIMAL_SEPARATORS = [",", "."]
+        self.results = {}
+        self.found = {}
+
+        # Stores indices of where the currency index occurs
+        self.currency_indices = []
 
         """
         self.num_strings saves the position of each decimal separator and thousands separator for a number.
@@ -36,7 +41,7 @@ class PriceParser:
         self.separator_positions = {}
 
         """
-        `self.symbol_condition` states when a currency symbol can be used in English.
+        `self.SYMBOL_CONDITION` states when a currency symbol can be used in English.
 
         It contains 3 keys:
 
@@ -49,8 +54,8 @@ class PriceParser:
         However, this common grammatical mistake will be automatically converted.
         """
 
-        self.symbol_condition = {
-            currency_code: {
+        self.SYMBOL_CONDITION = {
+            currency_from: {
                 'placed_before': True,
                 'placed_after': True,
                 'spaces_allowed': "optional"
@@ -152,14 +157,12 @@ class PriceParser:
         - USD 10000.00. Finds '10000.00'
         """
 
-        # Stores indices of where the currency index occurs
-        currency_indices = []
         matches = re.finditer(symbol, self.text)
-        currency_indices = [(match.start(), match.end()) for match in matches]
+        self.currency_indices = [(match.start(), match.end()) for match in matches]
 
-        # Find numbers next to currency_indices
+        # Find numbers next to self.currency_indices
         numbers = []
-        for start, end in currency_indices:
+        for start, end in self.currency_indices:
             if condition['placed_before'] == True:
                 num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
                 numbers.append(num)
@@ -173,14 +176,14 @@ class PriceParser:
 
     def find(self):
         self.results = {}
-        for key in self.symbol_condition.keys():
+        for key in self.SYMBOL_CONDITION.keys():
             if key == '$':
                 # If the symbol is a "$", escape it so that regex works
-                self.results[key] = self.find_currency_symbol(r"\$", self.symbol_condition[key]) 
+                self.results[key] = self.find_currency_symbol(r"\$", self.SYMBOL_CONDITION[key]) 
             else:
-                self.results[key] = self.find_currency_symbol(key, self.symbol_condition[key])
+                self.results[key] = self.find_currency_symbol(key, self.SYMBOL_CONDITION[key])
         
-        self.found = self.results
+        self.found = copy.deepcopy(self.results)
 
         # Convert each string in self.results to a number
         for key in self.results.keys():
