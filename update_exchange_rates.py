@@ -20,11 +20,12 @@ class ExchangeRates:
             print(f"{self.exchange_rate_file} not found.")
             self.is_outdated = True
         else:
+            self.next_update_time = self.content["time_next_update_unix"]
             self.last_update_time = self.content["time_last_update_unix"]
+            
             current_unix_time = datetime.now(timezone.utc).timestamp()
 
-            # State that exchange rates are outdated if more than 24 hours have passed since last_update_time
-            self.is_outdated = current_unix_time - self.last_update_time > self.ONE_DAY
+            self.is_outdated = current_unix_time > self.next_update_time
 
     def update(self):
         self.check_last_update()
@@ -35,9 +36,10 @@ class ExchangeRates:
             last_update_time_str = "Never"
     
         if self.is_outdated:
-            print(f"Exchange rates are outdated. Last updated: {last_update_time_str}")
+            print(f"Exchange rates are outdated. Last updated: {last_update_time_str}.")
         else:
-            print(f"Exchange rates are up to date. Last updated {last_update_time_str}")
+            next_update = datetime.fromtimestamp(self.next_update_time, UTC).strftime("%Y-%m-%d %H:%M:%SZ")
+            print(f"Exchange rates are up to date. Last updated: {last_update_time_str}. Next available update: {next_update}")
             return
 
         response = requests.get(self.URL)
