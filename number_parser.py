@@ -32,6 +32,30 @@ class NumberParser:
         self.uses_indian_thousands_sys = False
 
     def find(self, number, use_thousands_separator_for_single_unique_separator=True):
+        '''
+        Finds number.
+
+        If a number contains only one unique separator, it is not known if the separator represents
+        a thousands separator or a decimal separator.
+
+        `use_thousands_separator_for_single_unique_separator` determines if NumberParser.find()
+        should assume that unique separator is a *thousands* separator or not.
+
+        Example if `use_thousands_separator_for_single_unique_separator = False`
+
+        Original    New
+        "3,125"     3.125
+        "10,000"    10.0
+        "3.141"     3.141
+
+        Example if `use_thousands_separator_for_single_unique_separator = True`
+
+        Original    New
+        "3,125"     3125.0
+        "10,000"    10000.0
+        "3.141"     3141.0
+        '''
+
         self.number_str = number
 
         # Find separators and check if digit is a valid digit
