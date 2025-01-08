@@ -25,6 +25,13 @@ class NumberParser:
         self.SEPARATORS = [",", ".", "_", " ", "'"]
         self.DECIMAL_SEPARATORS = [",", "."]
 
+        '''
+        The Indian numbering system groups the first three digits to the left of the decimal point.
+        However, groups thereafter use two digits as separators.
+        See https://en.wikipedia.org/wiki/Indian_numbering_system for more information.
+        '''
+        self.uses_indian_thousands_sys = False
+
     def find(self, number, use_thousands_separator_for_single_unique_separator=True):
         self.number_str = number
 
@@ -37,11 +44,11 @@ class NumberParser:
             if digit not in self.VALID_DIGITS:
                 raise ValueError(f"{digit} is not a number.")
 
-        num_separators_found = len(set(separators_found))
+        unique_separators = len(set(separators_found))
 
-        if num_separators_found == 0:
+        if unique_separators == 0:
             self.number = float(self.number_str)
-        elif num_separators_found == 1:
+        elif unique_separators == 1:
             '''
             IMPORTANT: if the number of separators found is 1, it is not known if the separator is for thousands or decimals
             '''
@@ -59,7 +66,7 @@ class NumberParser:
                 self.num_decimal_places = len(decimal)
                 self.number = float(whole_number + "." + decimal)
 
-        elif num_separators_found == 2:
+        elif unique_separators == 2:
             decimal_separator = separators_found[-1]
             thousands_separator = separators_found[0]
 
@@ -79,5 +86,15 @@ class NumberParser:
             else:
                 raise ValueError(f"{decimal_separator} is not a valid decimal separator.")
 
-        elif num_separators_found > 2:
+        elif unique_separators > 2:
             raise ValueError(f"Found more than 2 separators. {self.number_str} must have 2 or fewer unique separators. Separators found: {separators_found}")
+
+        # Check if number_str uses the Indian numbering system
+        if unique_separators >= 1 and isinstance(self.thousands_separator_pos, list):
+            thousands = self.number_str.split(thousands_separator)
+
+            # Test all thousands groups in middle to see if number uses Indian thousands system
+            for group in thousands[1:-1]:
+                if len(group) == 2:
+                    self.uses_indian_thousands_sys = True
+                    break
