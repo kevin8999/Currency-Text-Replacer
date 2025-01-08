@@ -5,6 +5,8 @@ from number_parser import NumberParser
 from price_parser import PriceParser
 from update_exchange_rates import ExchangeRates
 import subprocess
+import time
+from decimal import Decimal, ROUND_DOWN
 
 
 class CurrencyConverter:
@@ -29,17 +31,20 @@ class CurrencyConverter:
         # Convert USD_amount to target currency
         amount_to = USD_amount * self.exchange_rates[currency_to]
         return amount_to
-        
 
-def main(text, currency_from, currency_to):
+
+def main(text, currency_from, currency_to, output_file):
     with open('currencies.json') as file:
         data = json.load(file)
 
     # Find all prices in text that use currency_from
+    print("Finding prices...")
+    start = time.time()
     currency_data = data[currency_from]
     price_parser = PriceParser(currency_from, currency_data, text)
     price_parser.find()
-    print(price_parser.results)
+    end = time.time()
+    print("\tPrices found.")
 
     # Get current exchange rates
     print("Updating exchange rates...")
@@ -49,6 +54,7 @@ def main(text, currency_from, currency_to):
     # Convert currencies
     currency_converter = CurrencyConverter()
     converted_values = {}
+    print(f"Converting currencies from {currency_from} to {currency_to}...")
     for key in price_parser.results:
         converted_values[key] = []
         for i, result in enumerate(price_parser.results[key]):
@@ -62,7 +68,25 @@ def main(text, currency_from, currency_to):
                 num_decimal_places = 0
 
             rounded = round(converted, num_decimal_places)
-            converted_values[key].append(rounded)
+
+            # Convert to price notation, unless num_decimal_places equals 0
+            price = Decimal(str(rounded)).quantize(Decimal(".01"), rounding=ROUND_DOWN)
+
+            if num_decimal_places == 0:
+                price = str(int(price))
+            else:
+                price = str(price)
+
+            converted_values[key].append(price)
+    
+    print(f"\tPrices converted to {currency_to}.")
+    print(price_parser.found)
+    print(converted_values)
+
+    # Convert prices to string
+
+    # Write to file
+    print(f"Writing to changes to {output_file}...")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert text from currency A to currency B using current exchange rates.")
@@ -111,4 +135,4 @@ if __name__ == '__main__':
     if args.currency_to not in valid_currencies:
         raise ValueError(f"{args.currency_to} was not found in valid_currencies.txt.")
 
-    main(text, args.currency_from, args.currency_to)
+    main(text, args.currency_from, args.currency_to, args.output_file)
