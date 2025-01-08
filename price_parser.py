@@ -180,15 +180,19 @@ class PriceParser:
             else:
                 self.results[key] = self.find_currency_symbol(key, self.symbol_condition[key])
         
+        self.found = self.results
+
         # Convert each string in self.results to a number
         for key in self.results.keys():
+            self.separator_positions[key] = []
             for i, result in enumerate(self.results[key]):
                 num_parser = NumberParser()
                 num_parser.find(result)
                 self.results[key][i] = num_parser.number
 
                 # Store position of decimal and thousands separators
-                self.separator_positions[num_parser.number_str] = {
-                    'decimal_separator': num_parser.decimal_separator_pos,
-                    'thousands_separator': num_parser.thousands_separator_pos
-                }
+                self.separator_positions[key].append({
+                    'number': num_parser.number_str,
+                    'decimal_sep_pos': num_parser.decimal_separator_pos, 
+                    'thousands_sep_pos': num_parser.thousands_separator_pos
+                })

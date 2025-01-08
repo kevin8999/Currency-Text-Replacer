@@ -51,10 +51,18 @@ def main(text, currency_from, currency_to):
     converted_values = {}
     for key in price_parser.results:
         converted_values[key] = []
-        for result in price_parser.results[key]:
+        for i, result in enumerate(price_parser.results[key]):
             converted = currency_converter.convert(result, currency_from, currency_to)
-            converted_values[key].append(converted)
 
+            # Round based on number of decimal places in original number
+            try:
+                num = price_parser.separator_positions[key][i]['number']
+                num_decimal_places = len(num)-1 - price_parser.separator_positions[key][i]['decimal_sep_pos'][1]
+            except:
+                num_decimal_places = 0
+
+            rounded = round(converted, num_decimal_places)
+            converted_values[key].append(rounded)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert text from currency A to currency B using current exchange rates.")
