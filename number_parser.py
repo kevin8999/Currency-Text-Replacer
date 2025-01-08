@@ -1,19 +1,18 @@
 class NumberParser:
+    """
+    Parses numbers in string format and converts them to integer.
+
+    For example, the following strings are converted to floats
+
+    Original Number     Float
+    "1,234,567"         1234567.0
+    "1 234 567.89"      1234567.89
+
+    Access the float using self.number and the original number using self.number_str
+
+    Access decimal separator and thousand separator positions using self.decimal_separator_pos and self.thousand_separator_pos
+    """
     def __init__(self) -> None:
-        """
-        Parses numbers in string format and converts them to integer.
-
-        For example, the following strings are converted to floats
-
-        Original Number     Float
-        "1,234,567"         1234567.0
-        "1 234 567.89"      1234567.89
-
-        Access the float using self.number and the original number using self.number_str
-
-        Access decimal separator and thousand separator positions using self.decimal_separator_pos and self.thousand_separator_pos
-        """
-
         # self.number_str will be converted to self.number in NumberParser
         self.number = None
 
