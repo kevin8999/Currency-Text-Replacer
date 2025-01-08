@@ -107,5 +107,6 @@ class NumberParser:
             'separator_positions': {
                 'decimal': self.decimal_separator_pos,
                 'thousands': self.thousands_separator_pos
-            }
+            },
+            'uses_indian_thousands_system': self.uses_indian_thousands_sys
         }
