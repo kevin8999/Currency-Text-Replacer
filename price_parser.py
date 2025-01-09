@@ -4,7 +4,7 @@ import copy
 
 class PriceParser:
     '''
-    Finds all prices with `currency_from` in `text`.
+    Finds all prices associated with `currency_from` in `text`.
     '''
 
     def __init__(self, currency_from, currency_data, text):
@@ -20,24 +20,12 @@ class PriceParser:
         self.numbers = []
         self.THOUSANDS_SEPARATORS = [",", ".", "_", " ", "'"]
         self.DECIMAL_SEPARATORS = [",", "."]
-        self.results = {}
+        self.prices = {}
         self.found = {}
 
         # Stores indices of where the currency index occurs
-        self.currency_indices = []
+        self.currency_indices = {}
 
-        """
-        self.num_strings saves the position of each decimal separator and thousands separator for a number.
-
-        For example, the number "1,234,567.89" would be stored as:
-
-        {
-            "123456789": {
-                "decimal_separators": (".", 9),
-                "thousands_separators": [(",", 1), (",", 5)]
-            }
-        }
-        """
         self.separator_positions = {}
 
         """
@@ -87,8 +75,25 @@ class PriceParser:
             }
         }
 
-    def find_number(self, move_backwards: bool, symbol_index: int, condition: dict):
-        # Finds number next to symbol_index
+    def find_number(self, move_backwards: bool, symbol_index: int, condition: dict) -> str:
+        """
+        Finds number located next to symbol_index.
+
+        symbol_index is the location of the currency symbol.
+
+        Examples
+
+        Original    Output
+        "$1,000"    "1,000"
+        "$10.000"   "10.000"
+
+        This function works by identifying if the consecutive character is a digit
+        or a valid thousands or decimal separator.
+
+        - If the consecutive character is a valid separator, continue appending to number
+        - If the consecutive character is NOT a valid separator, stop and return the number
+        """
+
         i = symbol_index
 
         num = []
@@ -138,6 +143,9 @@ class PriceParser:
                 else:
                     i += 1
 
+        if num == []:
+            return None
+
         if move_backwards:
             # Reverse num
             num = num[::-1]
@@ -146,56 +154,72 @@ class PriceParser:
         num = num.strip()
         return num
 
-    def find_currency_symbol(self, symbol, condition):
-        """
-        Matches currency symbol with numbers
-
-        Examples:
-
-        - $1,000.00. Finds '1000.00'
-        - 234.000.000,20 USD. Finds '234,000,000,20'
-        - USD 10000.00. Finds '10000.00'
-        """
-
-        matches = re.finditer(symbol, self.text)
-        self.currency_indices = [(match.start(), match.end()) for match in matches]
-
-        # Find numbers next to self.currency_indices
-        numbers = []
-        for start, end in self.currency_indices:
-            if condition['placed_before'] == True:
-                num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
-                numbers.append(num)
-
-            if condition['placed_after'] == True:
-                num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
-                numbers.append(num)
-
-        numbers = [num for num in numbers if num != ''] # Remove whitespaces in list
-        return numbers
-
     def find(self):
-        self.results = {}
+        self.prices = []
+
+        # Find each symbol in self.text
         for key in self.SYMBOL_CONDITION.keys():
+            condition = self.SYMBOL_CONDITION[key]
+
+            # If the symbol is a "$", escape it so that regex works.
+            # "$" in regex matches to the end of a string/line
             if key == '$':
-                # If the symbol is a "$", escape it so that regex works
-                self.results[key] = self.find_currency_symbol(r"\$", self.SYMBOL_CONDITION[key]) 
+                symbol = r"\$"
             else:
-                self.results[key] = self.find_currency_symbol(key, self.SYMBOL_CONDITION[key])
+                symbol = key
+
+            matches = re.finditer(symbol, self.text)
+            self.currency_indices[key] = [(match.start(), match.end()) for match in matches]
         
-        self.found = copy.deepcopy(self.results)
+        # Find numbers next to self.currency_indices
+        print(self.currency_indices)
+        numbers = []
 
-        # Convert each string in self.results to a number
-        for key in self.results.keys():
-            self.separator_positions[key] = []
-            for i, result in enumerate(self.results[key]):
-                num_parser = NumberParser()
-                num_parser.find(result)
-                self.results[key][i] = num_parser.number
+        for key in self.currency_indices.keys():
+            symbol_matches = self.currency_indices[key]
+            condition = self.SYMBOL_CONDITION[key]
+            print(f"Key: {key}")
+            for match in symbol_matches:
+                '''
+                TODO: if a currency symbol is next to two numbers, create a preference for numbers next to symbols with no space
 
-                # Store position of decimal and thousands separators
-                self.separator_positions[key].append({
-                    'number': num_parser.number_str,
-                    'decimal_sep_pos': num_parser.decimal_separator_pos, 
-                    'thousands_sep_pos': num_parser.thousands_separator_pos
-                })
+                Example:
+
+                "25 $35 bills."
+
+                In that instance, prefer "35" over "25"
+                '''
+
+                start, end = match
+                
+                symbol_placed = ''
+                if condition['placed_before'] == True:
+                    num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
+                    numbers.append({
+                            'symbol': key,
+                            'amount': num,
+                            'symbol_placed': 'after'
+                        })
+
+                if condition['placed_after'] == True:
+                    num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
+                    numbers.append({
+                            'symbol': key,
+                            'amount': num,
+                            'symbol_placed': 'before'
+                        })
+
+            for i, number in enumerate(numbers):
+                if number['amount'] == None:
+                    numbers.pop(i)
+
+        self.prices = numbers
+
+        # Convert each string in self.prices to a number
+        for i, price in enumerate(self.prices):
+            # TODO: fix error in loop where it loops over same dictionary key
+            amount = price['amount']
+            num_parser = NumberParser(amount)
+            num_parser.find()
+            self.prices[i]["value"] = num_parser.result
+        
