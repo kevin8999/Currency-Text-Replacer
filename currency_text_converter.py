@@ -34,6 +34,81 @@ class CurrencyConverter:
         return amount_to
 
 
+def format_number(num: str, thousands_separator=",", decimal_separator=".", uses_indian_thousands_system=False) -> str:
+    """
+    Format a number according to specified thousands and decimal separators,
+    with an option to use the Indian numbering system.
+
+    The Indian numbering system divides numbers into groups of two after the rightmost thousands group.
+
+    Examples are given below.
+
+    Raw number  Indian numbering system
+    100000      1,00,000
+    10000000    10,00,000
+
+    This function takes a number as a string and formats it with the specified
+    separators. It can format the number in either the Indian or standard
+    thousands system.
+
+    Parameters:
+    - num (str): The number to be formatted, provided as a string.
+    - thousands_separator (str): The character to use as the thousands separator (default is ",").
+    - decimal_separator (str): The character to use as the decimal separator (default is ".").
+    - uses_indian_thousands_system (bool): If True, formats the number using the Indian numbering system;
+                                           if False, uses the standard system (default is False).
+
+    Returns:
+    - str: A string representation of the number formatted with the specified separators.
+
+    Example:
+    >>> format_number("30000000")
+    '3,00,00,000'
+    
+    >>> format_number("1234567.89", uses_indian_thousands_system=True)
+    '12,34,567.89'
+    
+    >>> format_number("1234567.89", thousands_separator=".", decimal_separator=",")
+    '1.234.567,89'
+
+    Raises:
+    - ValueError: If the input is not a valid number string.
+    """
+
+    num_str = str(num)
+    
+    # Split the number into the integer and decimal parts (if any)
+    if decimal_separator in num_str:
+        integer_part, decimal_part = num_str.split(decimal_separator)
+    else:
+        integer_part = num_str
+        decimal_part = ''
+    
+    # Reverse the integer part for easier processing
+    integer_part = integer_part[::-1]
+    
+    # Create a list to hold the formatted parts
+    formatted_parts = []
+    
+    # Process the last three digits (thousands)
+    formatted_parts.append(integer_part[:3])
+    
+    # Process the remaining digits into groups of two or three
+    num_thousands_places = 2 if uses_indian_thousands_system else 3
+    for i in range(3, len(integer_part), num_thousands_places):
+        formatted_parts.append(integer_part[i:i+num_thousands_places])
+    
+    # Reverse the formatted parts and join them with thousands_separator
+    formatted_parts.reverse()
+    formatted_number = thousands_separator.join(formatted_parts)
+    
+    # Add the decimal part back if it exists
+    if decimal_part:
+        formatted_number += decimal_separator + decimal_part
+    
+    return formatted_number
+
+
 def main(text, currency_from, currency_to, output_file):
     with open('currencies.json') as file:
         data = json.load(file)
@@ -66,68 +141,39 @@ def main(text, currency_from, currency_to, output_file):
         except:
             num_decimal_places = 0
 
-        # Convert to price notation (with 2 decimal places), unless num_decimal_places equals 0
+        # Convert to price notation (with 2 decimal places)
         price = Decimal(str(converted)).quantize(Decimal(".01"), rounding=ROUND_DOWN)
 
         price = str(price)
 
+        # Get decimal separator if it exists
+        try:
+            decimal_separator = result['value']['separator_positions']['decimal'][0]
+        except:
+            decimal_separator = None
+
         # Add thousands separators if present in original string
         thousands_separators = result['value']['separator_positions']['thousands']
         try:
-            sep_pos = [pos for (symbol, pos) in thousands_separators]
             # Only one type of thousands separator is used, so grabbing only the first one will give you
             # the thousands separator for the number
-            sep_symbol = thousands_separators[0][0]
-            decimal_separator = result['value']['separator_positions']['decimal'][0]
-        except TypeError:
-            # Raises error if decimal_separator = None
-            decimal_separator = None
+            thousands_sep = thousands_separators[0][0]
         except:
-            pass
-        else:
-            # Split price at decimal separator if it exists
-            price = price.split(decimal_separator)
-            whole_num = list(price[0])
+            thousands_sep = ""
 
-            # Number of digits per thousands group
-            digits_in_thousands_group = None
-            if result['value']['uses_indian_thousands_system']:
-                # Add 1 to account for list index
-                digits_in_thousands_group = 2
+        price = price.split(decimal_separator)
 
-                # Insert first thousands separator
-                whole_num.insert(-3, sep_symbol)
+        # If price was not split into two, it means that the result did not have a decimal separator.
+        if len(price) == 1:
+            # Force price to have a decimal separator and split it
+            decimal_separator = "."
+            price = price[0].split(decimal_separator)
 
-                # Insert all other thousands separators
-                i = len(whole_num) - 6
-                while i > 0:
-                    whole_num.insert(i, sep_symbol)
-                    i -= digits_in_thousands_group
-            else:
-                # Add 1 to account for list index
-                digits_in_thousands_group = 3 + 1
+        uses_indian_thousands_system = result["value"]["uses_indian_thousands_system"]
+        num = float(price[0] + price[1])
+        new_price = format_number(num=num, thousands_separator=thousands_sep, uses_indian_thousands_system=uses_indian_thousands_system)
+        converted_values.append(new_price)
 
-                # Insert first thousands separator
-                # If length % 3 = 0, set it to 3 because numbers do not begin with a thousands separator
-                first_thous_pos = 3 if len(whole_num) % 3 == 0 else len(whole_num) % 3
-                whole_num.insert(first_thous_pos, sep_symbol)
-
-                # Insert all other thousands separators
-                i = first_thous_pos + digits_in_thousands_group
-                while i < len(whole_num):
-                    whole_num.insert(i, sep_symbol)
-                    i += digits_in_thousands_group
-                
-            whole_num = ''.join(whole_num)
-            price[0] = whole_num
-
-            price = f'{decimal_separator}'.join(price)
-
-        converted_values.append(price)
-    
-    print(f"\tPrices converted to {currency_to}.")
-    
-    print("Original\tNew")
     for i, value in enumerate(converted_values):
         print(f"{price_parser.prices[i]['amount']}\t\t{value}")
 
