@@ -162,7 +162,7 @@ class PriceParser:
             condition = self.SYMBOL_CONDITION[key]
 
             # If the symbol is a "$", escape it so that regex works.
-            # "$" in regex matches to the end of a string/line
+            # "$" in regex matches from the current position to the end of a line
             if key == '$':
                 symbol = r"\$"
             else:
