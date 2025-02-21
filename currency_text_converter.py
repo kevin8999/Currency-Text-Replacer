@@ -105,7 +105,8 @@ def format_number(num: str, thousands_separator=",", decimal_separator=".", uses
     # Add the decimal part back if it exists
     if decimal_part:
         formatted_number += decimal_separator + decimal_part
-    
+        formatted_number = formatted_number.replace(decimal_separator + "0", decimal_separator + "00")
+
     return formatted_number
 
 
@@ -174,11 +175,12 @@ def main(text, currency_from, currency_to, output_file):
         new_price = format_number(num=num, thousands_separator=thousands_sep, uses_indian_thousands_system=uses_indian_thousands_system)
         converted_values.append(new_price)
 
+    print(f"\tOriginal ({currency_from})\t\tConverted amount ({currency_to})")
     for i, value in enumerate(converted_values):
-        print(f"{price_parser.prices[i]['amount']}\t\t{value}")
+        print(f"\t{price_parser.prices[i]['amount']}\t\t{value}")
 
     # Write to file
-    print(f"Writing to changes to {output_file}...")
+    print(f"Writing changes to {output_file}...")
 
     """
     with open(output_file, "w") as file:
