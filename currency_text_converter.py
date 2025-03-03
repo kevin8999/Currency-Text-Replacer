@@ -43,9 +43,10 @@ def format_number(num: str, thousands_separator=",", decimal_separator=".", uses
 
     Examples are given below.
 
-    Raw number  Indian numbering system
-    100000      1,00,000
-    10000000    10,00,000
+    | Raw number | Indian numbering system |
+    | ---------- | ----------------------- |
+    | 100000     | 1,00,000                |
+    | 10000000   | 10,00,000               |
 
     This function takes a number as a string and formats it with the specified
     separators. It can format the number in either the Indian or standard
@@ -98,12 +99,12 @@ def format_number(num: str, thousands_separator=",", decimal_separator=".", uses
     for i in range(3, len(integer_part), num_thousands_places):
         formatted_parts.append(integer_part[i:i+num_thousands_places])
     
-    # Reverse the formatted parts and join them with thousands_separator
-    formatted_parts.reverse()
+    # Join the list with thousands_separator and reverse the string
     formatted_number = thousands_separator.join(formatted_parts)
+    formatted_number = formatted_number[::-1]
     
     # Add the decimal part back if it exists
-    if decimal_part:
+    if decimal_part != '' and decimal_part != '00':
         formatted_number += decimal_separator + decimal_part
         formatted_number = formatted_number.replace(decimal_separator + "0", decimal_separator + "00")
 
@@ -171,7 +172,7 @@ def main(text, currency_from, currency_to, output_file):
             price = price[0].split(decimal_separator)
 
         uses_indian_thousands_system = result["value"]["uses_indian_thousands_system"]
-        num = float(price[0] + price[1])
+        num = str(price[0] + decimal_separator + price[1])
         new_price = format_number(num=num, thousands_separator=thousands_sep, uses_indian_thousands_system=uses_indian_thousands_system)
         converted_values.append(new_price)
 
