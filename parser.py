@@ -2,6 +2,8 @@ import re
 from number_parser import NumberParser
 import copy
 
+from price_parser import Price
+
 class PriceParser:
     '''
     Finds all prices associated with `currency_from` in `text`.
@@ -83,8 +85,7 @@ class PriceParser:
 
         # self.SYMBOL_TYPE describes the symbol type in SYMBOL_
         self.SYMBOL_TYPE = [
-            "ISO",
-
+            "ISO"
         ]
 
     def find_number(self, move_backwards: bool, symbol_index: int, condition: dict) -> str:
@@ -187,8 +188,6 @@ class PriceParser:
         # Find numbers next to self.currency_indices
         numbers = []
 
-        print(self.currency_indices.keys())
-
         for key in self.currency_indices.keys():
             symbol_matches = self.currency_indices[key]
 
@@ -212,8 +211,22 @@ class PriceParser:
                     'symbol' : key,
                     'symbol_type' : symbol["type"]
                 }
+
+                if (symbol["placed_before"] == True) and (symbol["placed_after"] == True):
+                    num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
+
+                    # If numbers are not found to the left of the symbol, look for numbers to the right of the symbol
+                    if num == None:
+                        num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
+                        dictionary["symbol_placed"] = "before"
+                    else:
+                        dictionary["symbol_placed"] = "after"
+
+                    dictionary["amount"] = num
+                    numbers.append(dictionary)
+
                 
-                if symbol['placed_before'] == True:
+                elif symbol['placed_before'] == True:
                     num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
                     dictionary["amount"] = num
 
@@ -221,7 +234,7 @@ class PriceParser:
                     dictionary["symbol_placed"] = "after"
                     numbers.append(dictionary)
 
-                if symbol['placed_after'] == True:
+                elif symbol['placed_after'] == True:
                     num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
                     dictionary["amount"] = num
                     
