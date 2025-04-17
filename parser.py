@@ -46,34 +46,46 @@ class PriceParser:
             currency_from: {
                 'placed_before': True,
                 'placed_after': True,
-                'spaces_allowed': "optional"
+                'spaces_allowed': "optional",
+                "type" : "ISO"
             },
             currency_data['symbol']: {
                 'placed_before': True,
                 'placed_after': True,
-                'spaces_allowed': "optional" if len(currency_data['symbol']) > 1 else "required"
+                'spaces_allowed': "optional" if len(currency_data['symbol']) > 1 else "required",
+                "type" : "symbol"
             },
             currency_data['symbolNative']: {
                 'placed_before': True,
                 'placed_after': True,
-                'spaces_allowed': "forbidden"          
+                'spaces_allowed': "forbidden",
+                "type" : "symbol_native"       
             },
             currency_data['name'].upper(): {
                 'placed_before': False,
                 'placed_after': True,
-                'spaces_allowed': "optional"
+                'spaces_allowed': "optional",
+                "type": "denonym_name"
             },
             name: {
                 'placed_before': False,
                 'placed_after': True,
-                'spaces_allowed': "required"
+                'spaces_allowed': "required",
+                "type" : "name"
             },
             plural_name: {
                 'placed_before': False,
                 'placed_after': True,
-                'spaces_allowed': "required"
+                'spaces_allowed': "required",
+                "type" : "plural_name"
             }
         }
+
+        # self.SYMBOL_TYPE describes the symbol type in SYMBOL_
+        self.SYMBOL_TYPE = [
+            "ISO",
+
+        ]
 
     def find_number(self, move_backwards: bool, symbol_index: int, condition: dict) -> str:
         """
@@ -83,9 +95,10 @@ class PriceParser:
 
         Examples
 
-        Original    Output
-        "$1,000"    "1,000"
-        "$10.000"   "10.000"
+        | Original  | Output    |
+        | --------- | --------- |
+        | "$1,000"  |  "1,000"  |
+        | "$10.000" |  "10.000" |
 
         This function works by identifying if the consecutive character is a digit
         or a valid thousands or decimal separator.
@@ -154,7 +167,7 @@ class PriceParser:
         num = num.strip()
         return num
 
-    def find(self):
+    def find_symbol(self):
         self.prices = []
 
         # Find each symbol in self.text
@@ -172,13 +185,16 @@ class PriceParser:
             self.currency_indices[key] = [(match.start(), match.end()) for match in matches]
         
         # Find numbers next to self.currency_indices
-        print(self.currency_indices)
         numbers = []
+
+        print(self.currency_indices.keys())
 
         for key in self.currency_indices.keys():
             symbol_matches = self.currency_indices[key]
-            condition = self.SYMBOL_CONDITION[key]
-            print(f"Key: {key}")
+
+            # symbol states where a currency symbol can be placed
+            symbol = self.SYMBOL_CONDITION[key]
+
             for match in symbol_matches:
                 '''
                 TODO: if a currency symbol is next to two numbers, create a preference for numbers next to symbols with no space
@@ -191,23 +207,26 @@ class PriceParser:
                 '''
 
                 start, end = match
-                
-                symbol_placed = ''
-                if condition['placed_before'] == True:
-                    num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
-                    numbers.append({
-                            'symbol': key,
-                            'amount': num,
-                            'symbol_placed': 'after'
-                        })
 
-                if condition['placed_after'] == True:
+                dictionary = {
+                    'symbol' : key,
+                    'symbol_type' : symbol["type"]
+                }
+                
+                if symbol['placed_before'] == True:
+                    num = self.find_number(move_backwards=True, symbol_index=start, condition=condition)
+                    dictionary["amount"] = num
+
+                    # Dictionary stores where symbol is relative to number
+                    dictionary["symbol_placed"] = "after"
+                    numbers.append(dictionary)
+
+                if symbol['placed_after'] == True:
                     num = self.find_number(move_backwards=False, symbol_index=end, condition=condition)
-                    numbers.append({
-                            'symbol': key,
-                            'amount': num,
-                            'symbol_placed': 'before'
-                        })
+                    dictionary["amount"] = num
+                    
+                    dictionary["symbol_placed"] = "before"
+                    numbers.append(dictionary)
 
             for i, number in enumerate(numbers):
                 if number['amount'] == None:
@@ -217,9 +236,7 @@ class PriceParser:
 
         # Convert each string in self.prices to a number
         for i, price in enumerate(self.prices):
-            # TODO: fix error in loop where it loops over same dictionary key
             amount = price['amount']
             num_parser = NumberParser(amount)
             num_parser.find()
             self.prices[i]["value"] = num_parser.result
-        
