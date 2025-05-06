@@ -2,7 +2,7 @@ import json
 import argparse
 import re
 from number_parser import NumberParser
-from price_parser import PriceParser
+from parser import PriceParser
 from update_exchange_rates import ExchangeRates
 import subprocess
 import time
@@ -120,7 +120,7 @@ def main(text, currency_from, currency_to, output_file):
     start = time.time()
     currency_data = data[currency_from]
     price_parser = PriceParser(currency_from, currency_data, text)
-    price_parser.find()
+    price_parser.find_symbol()
     end = time.time()
     print("\tPrices found.")
 
@@ -183,10 +183,24 @@ def main(text, currency_from, currency_to, output_file):
     # Write to file
     print(f"Writing changes to {output_file}...")
 
-    """
+    #print(f"price_parser.prices:\n{price_parser.prices}")
+    #print(f"Currency indices:\n{price_parser.currency_indices}")
+
+    for i, prices in enumerate(price_parser.prices):
+        # Replace monetary amounts        
+        text = text.replace(prices['amount'], converted_values[i])
+
+        # Update currency indices
+        j = i
+
+        # Replace currency symbol
+        #text = text.replace(prices['symbol'], price_parser['sym'])
+
+    print(text)
+
     with open(output_file, "w") as file:
-        file.write(new_text)
-    """
+        file.write(text)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert text from currency A to currency B using current exchange rates.")
