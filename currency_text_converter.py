@@ -186,6 +186,13 @@ def main(text, currency_from, currency_to, output_file):
     #print(f"price_parser.prices:\n{price_parser.prices}")
     #print(f"Currency indices:\n{price_parser.currency_indices}")
 
+    # Create price parser for currency_to so that the currency's symbols are retrieved
+    curr_to_data = data[currency_to]
+
+    # Get name and plural name of currency_to
+    name = curr_to_data["name"].replace(curr_to_data["demonym"], "") # Remove demonym from currency
+    plural_name = name.replace(curr_to_data["majorSingle"], curr_to_data["majorPlural"])
+
     for i, prices in enumerate(price_parser.prices):
         # Replace monetary amounts        
         text = text.replace(prices['amount'], converted_values[i])
@@ -194,7 +201,23 @@ def main(text, currency_from, currency_to, output_file):
         j = i
 
         # Replace currency symbol
-        #text = text.replace(prices['symbol'], price_parser['sym'])
+        old_curr = prices['symbol']
+        new_curr = None
+
+        if prices['symbol_type'] == 'ISO':
+            new_curr = currency_to
+        elif prices['symbol_type'] == "symbol":
+            new_curr = curr_to_data["symbol"]
+        elif prices['symbol_type'] == "symbol_native":
+            new_curr = curr_to_data["symbolNative"]
+        elif prices['symbol_type'] == "denonym_name":
+            new_curr = curr_to_data['name']
+        elif prices['symbol_type'] == "name":
+            new_curr = name
+        elif prices['symbol_type'] == 'plural_name':
+            new_curr = plural_name
+
+        text = text.replace(prices['symbol'], new_curr)
 
     print(text)
 
