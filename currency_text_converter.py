@@ -183,9 +183,6 @@ def main(text, currency_from, currency_to, output_file):
     # Write to file
     print(f"Writing changes to {output_file}...")
 
-    #print(f"price_parser.prices:\n{price_parser.prices}")
-    #print(f"Currency indices:\n{price_parser.currency_indices}")
-
     # Create price parser for currency_to so that the currency's symbols are retrieved
     curr_to_data = data[currency_to]
 
@@ -196,9 +193,6 @@ def main(text, currency_from, currency_to, output_file):
     for i, prices in enumerate(price_parser.prices):
         # Replace monetary amounts        
         text = text.replace(prices['amount'], converted_values[i])
-
-        # Update currency indices
-        j = i
 
         # Replace currency symbol
         old_curr = prices['symbol']
